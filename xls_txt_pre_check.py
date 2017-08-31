@@ -286,7 +286,7 @@ def separate_char_is_tab(all_lines, logs, errors):
 		#new_lines.sort()
 		return new_lines, logs, errors
 	elif judge_line_have_same_cells(lines, r'\t')[0] and not judge_line_have_same_cells(lines, r'[\t]+')[0]:
-		errors.append('用单个Tab分列后所有行的列数相同，但行：%s 包含空元素！' % ','.join([str(i) for i in judge_line_have_same_cells(lines, r'[\t]+')[1]]))
+		errors.append('用单个Tab分列后所有行的列数相同，但第 %s 行包含空元素！' % ','.join([str(i) for i in judge_line_have_same_cells(lines, r'[\t]+')[1]]))
 		return [], logs, errors
 		#return [re.sub(r'[\t]+', '\t', line) for line in lines], logs, errors
 	elif not judge_line_have_same_cells(lines, r'\t')[0] and judge_line_have_same_cells(lines, r'[\t]+')[0]:
@@ -295,7 +295,7 @@ def separate_char_is_tab(all_lines, logs, errors):
 		#new_lines.sort()
 		return new_lines, logs, errors
 	elif not judge_line_have_same_cells(lines, r'\t')[0] and not judge_line_have_same_cells(lines, r'[\t]+')[0]:
-		errors.append('用Tab(s)对所有行进行分列后行：%s 的列数不一致！'% ','.join([str(i) for i in judge_line_have_same_cells(lines, r'\t')[1]]))
+		errors.append('用Tab(s)对所有行进行分列后，第 %s 行的列数不一致！'% ','.join([str(i) for i in judge_line_have_same_cells(lines, r'\t')[1]]))
 		return [], logs, errors
 
 def separate_char_is_space(all_lines, logs, errors):
@@ -310,7 +310,7 @@ def separate_char_is_space(all_lines, logs, errors):
 		#new_lines.sort()
 		return new_lines, logs, errors
 	elif judge_line_have_same_cells(lines, r'[ ]')[0] and not judge_line_have_same_cells(lines, r'[ ]+')[0]:
-		errors.append('用单个空格分列后所有行的列数相同，但行：%s 包含空元素！' % ','.join([str(i) for i in judge_line_have_same_cells(lines, r'[ ]+')[1]]))
+		errors.append('用单个空格分列后所有行的列数相同，但第 %s 行包含空元素！' % ','.join([str(i) for i in judge_line_have_same_cells(lines, r'[ ]+')[1]]))
 		return [], logs, errors
 		#return [re.sub(r'[ ]+', '\t', line) for line in lines], logs, errors
 	elif not judge_line_have_same_cells(lines, r'[ ]')[0] and judge_line_have_same_cells(lines, r'[ ]+')[0]:
@@ -319,7 +319,7 @@ def separate_char_is_space(all_lines, logs, errors):
 		#new_lines.sort()
 		return new_lines, logs, errors
 	elif not judge_line_have_same_cells(lines, r'[ ]')[0] and not judge_line_have_same_cells(lines, r'[ ]+')[0]:
-		errors.append('用空格(s)对所有行进行分列后行：%s 的列数不一致！'% ','.join([str(i) for i in judge_line_have_same_cells(lines, r'[ ]+')[1]]))
+		errors.append('用空格(s)对所有行进行分列后，第 %s 行的列数不一致！'% ','.join([str(i) for i in judge_line_have_same_cells(lines, r'[ ]+')[1]]))
 		return [], logs, errors
 
 def separate_char_is_space_or_tab(all_lines, logs, errors):
@@ -334,7 +334,7 @@ def separate_char_is_space_or_tab(all_lines, logs, errors):
 		#new_lines.sort()
 		return new_lines, logs, errors
 	else:
-		errors.append('用空格(s)或者Tab(s)对所有行进行分列后，行：%s 的列数不一致！'% ','.join([str(i) for i in judge_line_have_same_cells(lines, r'[\s+]+')[1]]))
+		errors.append('用空格(s)或者Tab(s)对所有行进行分列后，第 %s 行的列数不一致！'% ','.join([str(i) for i in judge_line_have_same_cells(lines, r'[\s+]+')[1]]))
 		return [], logs, errors
 
 def test_return(a):
@@ -349,24 +349,22 @@ def test_return(a):
 
 def judge_separate_char(tmp_lines, logs, errors):
 	tmp_lines_checked_sep_char, logs, errors1 = separate_char_is_tab(tmp_lines, logs, errors)
-	if errors1:
+	if not errors1:
 		return tmp_lines_checked_sep_char, logs, errors1
 	else:
-		errors = []
+		return [], logs, errors1
 
 	tmp_lines_checked_sep_char, logs, errors2 = separate_char_is_space(tmp_lines, logs, errors)
-	if errors2:
+	if not errors2:
 		return tmp_lines_checked_sep_char, logs, errors2
 	else:
-		errors = []
+		return [], logs, errors2
 
 	tmp_lines_checked_sep_char, logs, errors3 = separate_char_is_space_or_tab(tmp_lines, logs, errors)
-	if errors3:
+	if not errors3:
 		return tmp_lines_checked_sep_char, logs, errors3
 	else:
-		errors3.extend(errors1)
-		errors3.extend(errors2)
-		return tmp_lines_checked_sep_char, logs, errors3
+		return [], logs, errors3
 
 def del_duplicate_lines(all_lines, logs):
 	if len(all_lines) < check_lines:

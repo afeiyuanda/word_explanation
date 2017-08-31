@@ -14,7 +14,7 @@ import chardet,struct
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
-check_lines = 3001
+check_lines = 10001
 
 # 支持文件类型  
 # 用16进制字符串的目的是可以知道文件头是多少字节  
@@ -474,6 +474,7 @@ def __main__():
 		convert_excel_to_txt(input, logs)
 	else:
 		os.system('dos2unix -q '+ input)
+		os.system('mac2unix -q '+ input)
 	
 	logs, errors = is_empty(input, logs, errors)
 	if errors:
@@ -514,7 +515,7 @@ def __main__():
 		write_errors(errors, pre_check_log)
 		print errors[0]
 		sys.exit(errors[0])
-	#tmp_lines, logs = replace_invalid_chars(tmp_lines_checked_sep_char, logs, '')
+	tmp_lines, logs = replace_invalid_chars(tmp_lines_checked_sep_char, logs, '')
 	#tmp_lines, logs = del_duplicate_lines(tmp_lines, logs)
 	
 	#tmp_lines, errors = del_lines_have_same_row_name(tmp_lines, logs)

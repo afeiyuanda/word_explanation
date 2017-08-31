@@ -158,7 +158,7 @@ def check_chinese_char(input_file, logs, errors):
 def is_empty(input_file, logs, errors):
 	if not os.path.exists( input_file ):
 		#errors.append('%s does not exists!' % os.path.basename(input_file))
-		errors.append('File does not exists!')
+		errors.append('File does not exist!')
 	elif os.path.getsize( input_file ) == 0:
 		#errors.append('%s is empty!' % os.path.basename(input_file))
 		errors.append('Empty file is forbidden!')

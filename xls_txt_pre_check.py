@@ -131,7 +131,6 @@ def change_encode_to_utf8(file_url, new_code='utf-8'):
 		outf = open(file_url, 'w')
 		f = open(new_file, 'rb').read()
 		ff = f.decode(old_code).encode(new_code)
-		print ff
 		outf.write(ff)
 		outf.close()
 

@@ -302,4 +302,3 @@ if __name__ == '__main__':
                 convert_pic(img_path, new_img_path, web_report, wMax=1000.)
         except:
             pass
-    os.system('/share/nas2/software/node/bin/node /share/nas2/genome/cloud_soft/word_explanation/generateReport/index.js '+web_report+'/configtest.xml')

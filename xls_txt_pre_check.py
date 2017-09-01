@@ -119,6 +119,21 @@ def check_file_encode(file_url):
 	f = open(file_url, 'rb')
 	result = chardet.detect(f.read())
 	return result['encoding']
+	
+def change_encode_to_utf8(file_url, new_code='utf-8'):
+	old_code = check_file_encode(file_url)
+	#print old_code
+	if old_code == 'utf-8' or old_code == 'ascii':
+		pass
+	else:
+		new_file = file_url+'.code.bak'
+		os.system('mv '+file_url + ' '+new_file)
+		outf = open(file_url, 'w')
+		f = open(new_file, 'rb').read()
+		ff = f.decode(old_code).encode(new_code)
+		print ff
+		outf.write(ff)
+		outf.close()
 
 def check_is_utf8(file_url, logs, errors):
 	f = open(file_url)
@@ -475,6 +490,7 @@ def __main__():
 	else:
 		os.system('dos2unix -q '+ input)
 		os.system('mac2unix -q '+ input)
+		change_encode_to_utf8(input, 'utf-8')
 	
 	logs, errors = is_empty(input, logs, errors)
 	if errors:

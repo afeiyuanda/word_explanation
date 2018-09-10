@@ -3,6 +3,8 @@
 '''
 Author:	Liu wei
 Data:	2017.05.26
+Update:
+0929 文件大于512M跳过检查，按照tab分隔列后自动将每个单元格的空格去掉
 '''
 
 import os,sys,re
@@ -111,8 +113,9 @@ def convert_excel_to_txt(excel_file, logs):
 			pass
 	logs.append('We have changed your excel file %s to txt file.' % (excel_file))
 	f.close()
-	os.system('mv '+excel_file+' '+excel_file+'.xls.bak')
-	os.system('mv '+txt_file+' '+excel_file)
+	if os.path.exists( txt_file ) and os.path.getsize( txt_file ) != 0:
+		os.system('mv '+excel_file+' '+excel_file+'.raw_xls')
+		os.system('mv '+txt_file+' '+excel_file)
 	return excel_file
 
 def check_file_encode(file_url):
@@ -143,7 +146,8 @@ def check_is_utf8(file_url, logs, errors):
 		utf8_flag = 0
 	if utf8_flag == 0:
 		#errors.append('%s encoding is not utf8, please modify!' % os.path.basename(file_url))
-		errors.append('Input encoding is not utf8, please modify!')
+		#errors.append('Input encoding is not utf8, please modify!')
+		errors.append('请修改文件编码方式为utf8!')
 	else:
 		logs.append('%s encoding is utf8.' % file_url)
 	return logs, errors
@@ -177,13 +181,14 @@ def is_empty(input_file, logs, errors):
 		#errors.append('%s is empty!' % os.path.basename(input_file))
 		errors.append('文件不能为空!')
 	else:
+		#print "file size is : %s" % os.path.getsize( input_file )
 		all_anno_flag = 1
 		for line in open(input_file):
-			if (not line.startswith('#')) and  not line.startswith(' '):
+			if (not line.startswith('#')) and  not line.startswith(' ') and line.strip() != '':
 				all_anno_flag = 0
 		if all_anno_flag == 1:
 			#errors.append('%s exists, but all lines startswith # or space!' % os.path.basename(input_file))
-			errors.append('输入文件不能全部以#号或者空格开头!')
+			errors.append('文件不能为空，或全部以#号开头!')
 		else:
 			logs.append('%s exists, and not empty, not all startswith # or space.' % input_file)
 	return logs, errors
@@ -296,8 +301,8 @@ def separate_char_is_tab(all_lines, logs, errors):
 		
 	if judge_line_have_same_cells(lines, r'\t')[0] and judge_line_have_same_cells(lines, r'[\t]+')[0]:
 		logs.append('All lines separeted by tab(s), and do not have empty cells.')
-		new_lines = [re.sub(r'[\t]+', '\t', line) for line in all_lines]
-		#new_lines.sort()
+		new_lines1 = [re.sub(r'[\t]+', '\t', line) for line in all_lines]
+		new_lines = ['\t'.join(i.strip() for i in line.split('\t')) for line in new_lines1]
 		return new_lines, logs, errors
 	elif judge_line_have_same_cells(lines, r'\t')[0] and not judge_line_have_same_cells(lines, r'[\t]+')[0]:
 		errors.append('用单个Tab分列后所有行的列数相同，但第 %s 行包含空元素！' % ','.join([str(i) for i in judge_line_have_same_cells(lines, r'[\t]+')[1]]))
@@ -305,7 +310,8 @@ def separate_char_is_tab(all_lines, logs, errors):
 		#return [re.sub(r'[\t]+', '\t', line) for line in lines], logs, errors
 	elif not judge_line_have_same_cells(lines, r'\t')[0] and judge_line_have_same_cells(lines, r'[\t]+')[0]:
 		logs.append('Some lines separeted by multiple tab, we have replaced by single tab for you.')
-		new_lines = [re.sub(r'[\t]+', '\t', line) for line in all_lines]
+		new_lines1 = [re.sub(r'[\t]+', '\t', line) for line in all_lines]
+		new_lines = ['\t'.join(i.strip() for i in line.split('\t')) for line in new_lines1]
 		#new_lines.sort()
 		return new_lines, logs, errors
 	elif not judge_line_have_same_cells(lines, r'\t')[0] and not judge_line_have_same_cells(lines, r'[\t]+')[0]:
@@ -463,13 +469,20 @@ def write_logs(logs, log_file, ix = 0):
 		ix += 1
 	log_handle.close()
 
+def check_file_size(file_url):
+	file_size = os.path.getsize(file_url)
+	if file_size > 1024*1024*512:
+		return 1
+	else:
+		return 0
+	
 def __main__():
 	description = "This script is used to pre_check input file of small tools, and correct the file if necessary!\n"
 	quick_usage= 'python ' + sys.argv[0] + ' -input input_file -output output_file'
 
 	newParser = argparse.ArgumentParser( description = description, usage = quick_usage );
 	newParser.add_argument("-input", dest="input", help="Input file", default='input.txt', required=True);
-	newParser.add_argument("-outdir", dest="outdir", help="Output directory", default='/share/nas1/liuw/tools_temp/');
+	newParser.add_argument("-outdir", dest="outdir", help="Output directory", default='/share/nas2/genome/cloud_soft/word_explanation/xls_txt_pre_check_logs');
 	
 	args = newParser.parse_args();
 	argsDict = args.__dict__;
@@ -483,74 +496,78 @@ def __main__():
 	corrected_input = input + '.new'
 	pre_check_log = outdir + '/'+ input_filename+'.log'
 	
-	#print get_file_type(input)
-	if get_file_type(input) == 'xls or doc' or get_file_type(input) == 'xlsx':
-		convert_excel_to_txt(input, logs)
-	else:
-		os.system('dos2unix -q '+ input)
-		os.system('mac2unix -q '+ input)
-		change_encode_to_utf8(input, 'utf-8')
-	
-	logs, errors = is_empty(input, logs, errors)
-	if errors:
-		write_errors(errors, pre_check_log)
-		print errors[0]
-		sys.exit(errors[0])
-
-	'''
-	logs, errors = check_is_utf8(input, logs, errors)
-	if errors:
-		write_errors(errors, pre_check_log)
-		print errors[0]
-		sys.exit(errors[0])
-	'''
-
-	logs, errors = check_chinese_char(input, logs, errors)
-	if errors:
-		write_errors(errors, pre_check_log)
-		print errors[0]
-		sys.exit(errors[0])
-	
-	errors = judge_startswith_tabs_spaces(open(input).readlines(), errors)
-	if errors:
-		write_errors(errors, pre_check_log)
-		print errors[0]
-		sys.exit(errors[0])
-
-	tmp_lines, logs = del_empty_lines(open(input).readlines(), logs)
-	tmp_lines, logs = del_duplicate_lines(tmp_lines, logs)
-	#tmp_lines, errors = del_lines_have_same_row_name(tmp_lines, errors, '\t')
-	#if errors:
-	#	write_errors(errors, pre_check_log)
-	#	print errors[0]
-	#	sys.exit(errors[0])
-
-	tmp_lines_checked_sep_char, logs, errors = judge_separate_char(tmp_lines, logs, errors)
-	if errors:
-		write_errors(errors, pre_check_log)
-		print errors[0]
-		sys.exit(errors[0])
-	tmp_lines, logs = replace_invalid_chars(tmp_lines_checked_sep_char, logs, '')
-	#tmp_lines, logs = del_duplicate_lines(tmp_lines, logs)
-	
-	#tmp_lines, errors = del_lines_have_same_row_name(tmp_lines, logs)
-	
-	output_handle = open(corrected_input, 'w')
-	for line in tmp_lines:
-		output_handle.write(line.strip() + '\n')
-	output_handle.close()
-
-	ix = 0
-	#print logs
-	if logs:
-		write_logs(logs, pre_check_log, ix)
-	os.system('chmod 775 '+pre_check_log)
-	
-	if tmp_lines != '':
-		os.system('mv '+input+' '+input+'.bak')
-		os.system('mv '+corrected_input+' '+input)
-	else:
+	if check_file_size(input):
+		write_logs(['File size bigger than 512M, do not check!'],pre_check_log,1)
 		pass
+	else:
+		logs, errors = is_empty(input, logs, errors)
+		if errors:
+			write_errors(errors, pre_check_log)
+			print errors[0]
+			sys.exit(errors[0])
+
+		#print get_file_type(input)
+		if get_file_type(input) == 'xls or doc' or get_file_type(input) == 'xlsx':
+			convert_excel_to_txt(input, logs)
+		else:
+			os.system('dos2unix -q '+ input)
+			os.system('mac2unix -q '+ input)
+			#change_encode_to_utf8(input, 'utf-8')
+
+		#'''
+		logs, errors = check_is_utf8(input, logs, errors)
+		if errors:
+			write_errors(errors, pre_check_log)
+			print errors[0]
+			sys.exit(errors[0])
+		#'''
+
+		logs, errors = check_chinese_char(input, logs, errors)
+		if errors:
+			write_errors(errors, pre_check_log)
+			print errors[0]
+			sys.exit(errors[0])
+		
+		errors = judge_startswith_tabs_spaces(open(input).readlines(), errors)
+		if errors:
+			write_errors(errors, pre_check_log)
+			print errors[0]
+			sys.exit(errors[0])
+
+		tmp_lines, logs = del_empty_lines(open(input).readlines(), logs)
+		tmp_lines, logs = del_duplicate_lines(tmp_lines, logs)
+		#tmp_lines, errors = del_lines_have_same_row_name(tmp_lines, errors, '\t')
+		#if errors:
+		#	write_errors(errors, pre_check_log)
+		#	print errors[0]
+		#	sys.exit(errors[0])
+
+		tmp_lines_checked_sep_char, logs, errors = judge_separate_char(tmp_lines, logs, errors)
+		if errors:
+			write_errors(errors, pre_check_log)
+			print errors[0]
+			sys.exit(errors[0])
+		tmp_lines, logs = replace_invalid_chars(tmp_lines_checked_sep_char, logs, '')
+		#tmp_lines, logs = del_duplicate_lines(tmp_lines, logs)
+		
+		#tmp_lines, errors = del_lines_have_same_row_name(tmp_lines, logs)
+		
+		output_handle = open(corrected_input, 'w')
+		for line in tmp_lines:
+			output_handle.write(line.strip() + '\n')
+		output_handle.close()
+
+		ix = 0
+		#print logs
+		if logs:
+			write_logs(logs, pre_check_log, ix)
+		os.system('chmod 775 '+pre_check_log)
+		
+		if os.path.exists( corrected_input ) and os.path.getsize( corrected_input ) != 0:
+			os.system('mv '+input+' '+input+'.bak')
+			os.system('mv '+corrected_input+' '+input)
+		else:
+			pass
 
 if __name__ == '__main__':
 	__main__()
